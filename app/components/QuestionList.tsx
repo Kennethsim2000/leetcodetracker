@@ -81,8 +81,9 @@ export const QuestionsList: React.FC<QuestionsListProps> = ({
                     <div className="flex items-center gap-2">
                       <CheckCircle className="w-4 h-4 text-green-500" />
                       <span>
-                        Last solved: {question.last_solved.toLocaleDateString()}{" "}
-                        ({daysSinceLastSolved} days ago)
+                        Last solved:{" "}
+                        {question.last_solved.toLocaleDateString("en-GB")} (
+                        {daysSinceLastSolved} days ago)
                       </span>
                     </div>
                   ) : (
@@ -99,7 +100,7 @@ export const QuestionsList: React.FC<QuestionsListProps> = ({
                       <Calendar className="w-4 h-4" />
                       <span className={isDue ? "text-red-600 font-medium" : ""}>
                         Next review:{" "}
-                        {question.reminder_date.toLocaleDateString()}
+                        {question.reminder_date.toLocaleDateString("en-GB")}
                       </span>
                     </div>
                   )}
