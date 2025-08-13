@@ -5,9 +5,10 @@
 import React, { useState, useEffect } from "react";
 import { Plus, Search } from "lucide-react";
 import { LeetCodeQuestion, TabType } from "./types";
-import { calculateNextReviewDate, isQuestionDue } from "./utils";
+import { isQuestionDue } from "./utils";
 import { QuestionsList } from "./components/QuestionList";
 import { AddQuestionModal } from "./components/AddQuestionModal";
+import { RevisionModal } from "./components/RevisionModal";
 
 // Sample data
 const sampleQuestions: LeetCodeQuestion[] = [
@@ -40,6 +41,12 @@ const sampleQuestions: LeetCodeQuestion[] = [
 export default function LeetCodeTracker() {
   const [questions, setQuestions] = useState<LeetCodeQuestion[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showRevisionModal, setShowRevisionModal] = useState(false);
+  const [selectedQuestionForRevision, setSelectedQuestionForRevision] =
+    useState<{
+      id: string;
+      name: string;
+    } | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTab, setSelectedTab] = useState<TabType>("all");
 
@@ -63,17 +70,25 @@ export default function LeetCodeTracker() {
     setShowAddForm(false);
   };
 
-  const markAsSolved = (id: string) => {
+  // Modified to show revision modal instead of immediately marking as solved
+  const handleMarkSolved = (id: string) => {
+    const question = questions.find((q) => q.id === id);
+    if (question) {
+      setSelectedQuestionForRevision({
+        id: question.id,
+        name: question.question,
+      });
+      setShowRevisionModal(true);
+    }
+  };
+
+  // New function to actually mark as solved with custom revision period
+  const markAsSolved = (id: string, revisionWeeks: number) => {
     setQuestions((prev) =>
       prev.map((q) => {
         if (q.id === id) {
-          const solveCount = q.last_solved
-            ? Math.floor(
-                (new Date().getTime() - q.last_solved.getTime()) /
-                  (1000 * 60 * 60 * 24 * 30)
-              ) + 1
-            : 1;
-          const nextReviewDate = calculateNextReviewDate(solveCount);
+          const nextReviewDate = new Date();
+          nextReviewDate.setDate(nextReviewDate.getDate() + revisionWeeks * 7);
 
           return {
             ...q,
@@ -84,6 +99,21 @@ export default function LeetCodeTracker() {
         return q;
       })
     );
+
+    // Close the revision modal
+    setShowRevisionModal(false);
+    setSelectedQuestionForRevision(null);
+  };
+
+  const handleRevisionConfirm = (weeks: number) => {
+    if (selectedQuestionForRevision) {
+      markAsSolved(selectedQuestionForRevision.id, weeks);
+    }
+  };
+
+  const handleRevisionClose = () => {
+    setShowRevisionModal(false);
+    setSelectedQuestionForRevision(null);
   };
 
   //TODO: Add api call to backend to delete a question from the backend
@@ -177,7 +207,7 @@ export default function LeetCodeTracker() {
         {/* Questions List */}
         <QuestionsList
           questions={filteredQuestions}
-          onMarkSolved={markAsSolved}
+          onMarkSolved={handleMarkSolved}
           onDelete={deleteQuestion}
         />
       </div>
@@ -188,6 +218,17 @@ export default function LeetCodeTracker() {
           <AddQuestionModal
             onAdd={addQuestion}
             onClose={() => setShowAddForm(false)}
+          />
+        </div>
+      )}
+
+      {/* Revision Modal */}
+      {showRevisionModal && selectedQuestionForRevision && (
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-300">
+          <RevisionModal
+            questionName={selectedQuestionForRevision.name}
+            onConfirm={handleRevisionConfirm}
+            onClose={handleRevisionClose}
           />
         </div>
       )}
