@@ -48,6 +48,7 @@ export default function LeetCodeTracker() {
     setQuestions(sampleQuestions);
   }, []);
 
+  //TODO: Add call to backend to insert a new question into the database
   const addQuestion = (
     questionData: Omit<LeetCodeQuestion, "id" | "last_solved" | "reminder_date">
   ) => {
@@ -85,6 +86,7 @@ export default function LeetCodeTracker() {
     );
   };
 
+  //TODO: Add api call to backend to delete a question from the backend
   const deleteQuestion = (id: string) => {
     setQuestions((prev) => prev.filter((q) => q.id !== id));
   };
