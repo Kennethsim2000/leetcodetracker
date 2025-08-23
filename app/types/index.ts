@@ -1,5 +1,3 @@
-// types/index.ts
-
 export interface LeetCodeQuestion {
   id: string;
   question: string;

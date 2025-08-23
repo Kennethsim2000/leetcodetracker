@@ -1,5 +1,3 @@
-// components/QuestionsList.tsx
-
 import React from "react";
 import { ExternalLink, CheckCircle, Calendar } from "lucide-react";
 import { LeetCodeQuestion } from "../types";

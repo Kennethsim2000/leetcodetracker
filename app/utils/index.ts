@@ -1,5 +1,3 @@
-// utils/index.ts
-
 import { LeetCodeQuestion } from "../types";
 
 // Calculate next review date based on solve count

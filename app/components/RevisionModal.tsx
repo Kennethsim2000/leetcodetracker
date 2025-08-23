@@ -1,5 +1,3 @@
-// components/RevisionModal.tsx
-
 import React, { useState } from "react";
 import { CheckCircle, Calendar } from "lucide-react";
 

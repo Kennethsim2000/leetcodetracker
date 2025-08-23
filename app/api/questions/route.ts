@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import clientPromise from "../../lib/mongodb";
-import { ObjectId } from "mongodb";
 import { LeetCodeQuestion } from "@/app/types";
 
 export const dynamic = "force-dynamic";
