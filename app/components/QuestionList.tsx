@@ -39,7 +39,7 @@ export const QuestionsList: React.FC<QuestionsListProps> = ({
 
         return (
           <div
-            key={question.id}
+            key={question.question}
             className={`bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border-l-4 transition-all hover:shadow-md ${
               isDue ? "border-l-red-500" : "border-l-green-500"
             }`}

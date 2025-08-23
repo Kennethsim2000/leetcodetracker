@@ -10,36 +10,10 @@ import { QuestionsList } from "./components/QuestionList";
 import { AddQuestionModal } from "./components/AddQuestionModal";
 import { RevisionModal } from "./components/RevisionModal";
 
-// Sample data
-const sampleQuestions: LeetCodeQuestion[] = [
-  {
-    id: "1",
-    question: "Two Sum",
-    url: "https://leetcode.com/problems/two-sum/",
-    difficulty: "Easy",
-    last_solved: new Date("2024-07-15"),
-    reminder_date: new Date("2024-08-15"),
-  },
-  {
-    id: "2",
-    question: "Add Two Numbers",
-    url: "https://leetcode.com/problems/add-two-numbers/",
-    difficulty: "Medium",
-    last_solved: null,
-    reminder_date: null,
-  },
-  {
-    id: "3",
-    question: "Longest Substring Without Repeating Characters",
-    url: "https://leetcode.com/problems/longest-substring-without-repeating-characters/",
-    difficulty: "Medium",
-    last_solved: new Date("2024-07-01"),
-    reminder_date: new Date("2024-08-01"),
-  },
-];
-
 export default function LeetCodeTracker() {
   const [questions, setQuestions] = useState<LeetCodeQuestion[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showRevisionModal, setShowRevisionModal] = useState(false);
   const [selectedQuestionForRevision, setSelectedQuestionForRevision] =
@@ -50,24 +24,81 @@ export default function LeetCodeTracker() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTab, setSelectedTab] = useState<TabType>("all");
 
-  // Initialize with sample data
+  // Fetch questions from database
+  const fetchQuestions = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const response = await fetch("/api/questions");
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to fetch questions");
+      }
+
+      // Transform dates from strings to Date objects
+      const transformedQuestions = data.questions.map(
+        (q: LeetCodeQuestion) => ({
+          ...q,
+          last_solved: q.last_solved ? new Date(q.last_solved) : null,
+          reminder_date: q.reminder_date ? new Date(q.reminder_date) : null,
+        })
+      );
+
+      setQuestions(transformedQuestions);
+    } catch (error) {
+      console.error("Error fetching questions:", error);
+      setError(
+        error instanceof Error ? error.message : "Failed to load questions"
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Initialize by fetching from database
   useEffect(() => {
-    setQuestions(sampleQuestions);
+    fetchQuestions();
   }, []);
 
-  //TODO: Add call to backend to insert a new question into the database
-  const addQuestion = (
+  // Add question via API
+  const addQuestion = async (
     questionData: Omit<LeetCodeQuestion, "id" | "last_solved" | "reminder_date">
   ) => {
-    const newQuestion: LeetCodeQuestion = {
-      id: Date.now().toString(),
-      ...questionData,
-      last_solved: null,
-      reminder_date: null,
-    };
+    try {
+      const response = await fetch("/api/questions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(questionData),
+      });
 
-    setQuestions((prev) => [...prev, newQuestion]);
-    setShowAddForm(false);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to add question");
+      }
+
+      // Add the new question to the local state
+      const newQuestion = {
+        ...data.question,
+        last_solved: data.question.last_solved
+          ? new Date(data.question.last_solved)
+          : null,
+        reminder_date: data.question.reminder_date
+          ? new Date(data.question.reminder_date)
+          : null,
+      };
+
+      setQuestions((prev) => [newQuestion, ...prev]);
+      setShowAddForm(false);
+    } catch (error) {
+      console.error("Error adding question:", error);
+      // Error handling is done in the modal
+      throw error;
+    }
   };
 
   // Modified to show revision modal instead of immediately marking as solved
@@ -82,27 +113,44 @@ export default function LeetCodeTracker() {
     }
   };
 
-  // New function to actually mark as solved with custom revision period
-  const markAsSolved = (id: string, revisionWeeks: number) => {
-    setQuestions((prev) =>
-      prev.map((q) => {
-        if (q.id === id) {
-          const nextReviewDate = new Date();
-          nextReviewDate.setDate(nextReviewDate.getDate() + revisionWeeks * 7);
+  // Mark as solved with API call
+  const markAsSolved = async (id: string, revisionWeeks: number) => {
+    try {
+      const response = await fetch("/api/questions", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id, revisionWeeks }),
+      });
 
-          return {
-            ...q,
-            last_solved: new Date(),
-            reminder_date: nextReviewDate,
-          };
-        }
-        return q;
-      })
-    );
+      const data = await response.json();
 
-    // Close the revision modal
-    setShowRevisionModal(false);
-    setSelectedQuestionForRevision(null);
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to update question");
+      }
+
+      // Update the local state
+      setQuestions((prev) =>
+        prev.map((q) => {
+          if (q.id === id) {
+            return {
+              ...q,
+              last_solved: new Date(data.question.last_solved),
+              reminder_date: new Date(data.question.reminder_date),
+            };
+          }
+          return q;
+        })
+      );
+
+      // Close the revision modal
+      setShowRevisionModal(false);
+      setSelectedQuestionForRevision(null);
+    } catch (error) {
+      console.error("Error marking question as solved:", error);
+      // You might want to show an error message to the user here
+    }
   };
 
   const handleRevisionConfirm = (weeks: number) => {
@@ -116,9 +164,25 @@ export default function LeetCodeTracker() {
     setSelectedQuestionForRevision(null);
   };
 
-  //TODO: Add api call to backend to delete a question from the backend
-  const deleteQuestion = (id: string) => {
-    setQuestions((prev) => prev.filter((q) => q.id !== id));
+  // Delete question via API
+  const deleteQuestion = async (id: string) => {
+    try {
+      const response = await fetch(`/api/questions?id=${id}`, {
+        method: "DELETE",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to delete question");
+      }
+
+      // Remove from local state
+      setQuestions((prev) => prev.filter((q) => q.id !== id));
+    } catch (error) {
+      console.error("Error deleting question:", error);
+      // You might want to show an error message to the user here
+    }
   };
 
   // Filter questions based on selected tab and search
@@ -141,6 +205,53 @@ export default function LeetCodeTracker() {
 
   const dueCount = questions.filter(isQuestionDue).length;
   const completedCount = questions.filter((q) => q.last_solved !== null).length;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">
+            Loading questions...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <div className="bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-800 rounded-xl p-6">
+            <svg
+              className="w-12 h-12 text-red-500 mx-auto mb-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <h3 className="text-lg font-semibold text-red-800 dark:text-red-200 mb-2">
+              Error Loading Questions
+            </h3>
+            <p className="text-red-600 dark:text-red-300 mb-4">{error}</p>
+            <button
+              onClick={fetchQuestions}
+              className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 relative">
@@ -210,6 +321,39 @@ export default function LeetCodeTracker() {
           onMarkSolved={handleMarkSolved}
           onDelete={deleteQuestion}
         />
+
+        {/* Empty State */}
+        {questions.length === 0 && (
+          <div className="text-center py-12">
+            <svg
+              className="w-16 h-16 text-gray-400 mx-auto mb-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1}
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+              No questions yet
+            </h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-4">
+              Start tracking your LeetCode progress by adding your first
+              question.
+            </p>
+            <button
+              onClick={() => setShowAddForm(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Add Your First Question
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Add Question Modal */}

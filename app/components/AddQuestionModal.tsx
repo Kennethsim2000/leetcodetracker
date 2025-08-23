@@ -24,10 +24,13 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
   const [errors, setErrors] = useState({
     question: "",
     url: "",
+    api: "",
   });
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const validateForm = (): boolean => {
-    const newErrors = { question: "", url: "" };
+    const newErrors = { question: "", url: "", api: "" };
     let isValid = true;
 
     if (!formData.question.trim()) {
@@ -47,14 +50,53 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
     return isValid;
   };
 
-  const handleSubmit = () => {
-    if (validateForm()) {
-      onAdd(formData);
+  const handleSubmit = async () => {
+    if (!validateForm() || isSubmitting) return;
+
+    setIsSubmitting(true);
+    setErrors((prev) => ({ ...prev, api: "" }));
+
+    try {
+      const response = await fetch("/api/questions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          question: formData.question.trim(),
+          url: formData.url.trim(),
+          difficulty: formData.difficulty,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to add question");
+      }
+
+      // Call the parent's onAdd function with the created question
+      onAdd(data.question);
+
+      // Reset form
+      setFormData({
+        question: "",
+        url: "",
+        difficulty: "Easy",
+      });
+    } catch (error) {
+      console.error("Error adding question:", error);
+      setErrors((prev) => ({
+        ...prev,
+        api: error instanceof Error ? error.message : "Failed to add question",
+      }));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
+    if (e.key === "Enter" && !isSubmitting) {
       handleSubmit();
     }
     if (e.key === "Escape") {
@@ -89,7 +131,8 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
         </div>
         <button
           onClick={onClose}
-          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          disabled={isSubmitting}
+          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
         >
           <svg
             className="w-5 h-5 text-gray-500"
@@ -108,6 +151,28 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
       </div>
 
       <div className="space-y-6">
+        {/* API Error Display */}
+        {errors.api && (
+          <div className="p-3 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-xl">
+            <p className="text-red-600 dark:text-red-400 text-sm flex items-center gap-2">
+              <svg
+                className="w-4 h-4 flex-shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              {errors.api}
+            </p>
+          </div>
+        )}
+
         {/* Question Name */}
         <div>
           <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
@@ -123,7 +188,8 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
             }}
             onKeyPress={handleKeyPress}
             placeholder="e.g., Two Sum, Reverse Linked List"
-            className={`w-full p-4 border-2 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+            disabled={isSubmitting}
+            className={`w-full p-4 border-2 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
               errors.question
                 ? "border-red-300 bg-red-50 dark:bg-red-900/10"
                 : "border-gray-200 dark:border-gray-600"
@@ -163,7 +229,8 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
             }}
             onKeyPress={handleKeyPress}
             placeholder="https://leetcode.com/problems/two-sum/"
-            className={`w-full p-4 border-2 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+            disabled={isSubmitting}
+            className={`w-full p-4 border-2 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
               errors.url
                 ? "border-red-300 bg-red-50 dark:bg-red-900/10"
                 : "border-gray-200 dark:border-gray-600"
@@ -205,7 +272,8 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
                     difficulty: difficulty as "Easy" | "Medium" | "Hard",
                   }))
                 }
-                className={`p-3 rounded-xl border-2 transition-all font-medium text-sm ${
+                disabled={isSubmitting}
+                className={`p-3 rounded-xl border-2 transition-all font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed ${
                   formData.difficulty === difficulty
                     ? `${getDifficultyColor(
                         difficulty
@@ -223,14 +291,37 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
         <div className="flex gap-3 pt-4">
           <button
             onClick={handleSubmit}
-            className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white py-4 rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
+            disabled={isSubmitting}
+            className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white py-4 rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
           >
-            <Plus className="w-5 h-5" />
-            Add Question
+            {isSubmitting ? (
+              <>
+                <svg
+                  className="animate-spin w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                  />
+                </svg>
+                Adding...
+              </>
+            ) : (
+              <>
+                <Plus className="w-5 h-5" />
+                Add Question
+              </>
+            )}
           </button>
           <button
             onClick={onClose}
-            className="px-6 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-4 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-all font-semibold"
+            disabled={isSubmitting}
+            className="px-6 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-4 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancel
           </button>
