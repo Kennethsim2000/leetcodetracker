@@ -75,18 +75,14 @@ export async function POST(req: Request) {
 
     // Construct the new question document
     const newQuestion: Omit<LeetCodeQuestion, "id"> & {
-      owner?: string | null;
       created_at: Date;
-      updated_at: Date;
     } = {
       question: question.trim(),
       url: url.trim(),
       difficulty: difficulty as "Easy" | "Medium" | "Hard",
-      last_solved: null,
-      reminder_date: null,
-      owner: owner || null,
+      last_solved: new Date(),
+      reminder_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 2 weeks later
       created_at: new Date(),
-      updated_at: new Date(),
     };
 
     const result = await collection.insertOne(newQuestion);
