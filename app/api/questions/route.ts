@@ -10,7 +10,7 @@ export async function GET(req: Request) {
   try {
     const client = await clientPromise;
     const database = client.db(process.env.DATABASE);
-    const collection = database.collection(process.env.COLLECTIONS!);
+    const collection = database.collection("LeetcodeQuestions");
 
     const questions = await collection
       .find({})
@@ -32,7 +32,7 @@ export async function POST(req: Request) {
   try {
     const client = await clientPromise;
     const database = client.db(process.env.DATABASE);
-    const collection = database.collection(process.env.COLLECTIONS!);
+    const collection = database.collection("LeetcodeQuestions");
 
     const body = await req.json();
     const { question, url, difficulty, owner } = body;
