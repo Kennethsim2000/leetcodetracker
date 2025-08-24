@@ -9,7 +9,6 @@ import { AddQuestionModal } from "./components/AddQuestionModal";
 import { RevisionModal } from "./components/RevisionModal";
 
 export default function LeetCodeTracker() {
-  const [questions, setQuestions] = useState<LeetCodeQuestion[]>([]);
   const [dueQuestions, setDueQuestions] = useState<LeetCodeQuestion[]>([]);
   const [notDueQuestions, setNotDueQuestions] = useState<LeetCodeQuestion[]>(
     []
@@ -48,7 +47,12 @@ export default function LeetCodeTracker() {
         })
       );
 
-      setQuestions(transformedQuestions);
+      setDueQuestions(
+        transformedQuestions.filter((q: LeetCodeQuestion) => isQuestionDue(q))
+      );
+      setNotDueQuestions(
+        transformedQuestions.filter((q: LeetCodeQuestion) => !isQuestionDue(q))
+      );
     } catch (error) {
       console.error("Error fetching questions:", error);
       setError(
@@ -64,18 +68,14 @@ export default function LeetCodeTracker() {
     fetchQuestions();
   }, []);
 
-  useEffect(() => {
-    setDueQuestions(questions.filter((q) => isQuestionDue(q)));
-    setNotDueQuestions(questions.filter((q) => !isQuestionDue(q)));
-  }, [questions]);
-
   // Filter by search term within the current tab
   const getFilteredQuestions = () => {
     const list = selectedTab === "due" ? dueQuestions : notDueQuestions;
 
-    return list.filter((q) =>
+    const questions = list.filter((q) =>
       q.question.toLowerCase().includes(searchTerm.toLowerCase())
     );
+    return questions;
   };
 
   // Add question via API
@@ -108,7 +108,7 @@ export default function LeetCodeTracker() {
           : null,
       };
 
-      setQuestions((prev) => [newQuestion, ...prev]);
+      setNotDueQuestions((prev) => [newQuestion, ...prev]);
       setShowAddForm(false);
     } catch (error) {
       console.error("Error adding question:", error);
@@ -119,7 +119,12 @@ export default function LeetCodeTracker() {
 
   // Modified to show revision modal instead of immediately marking as solved
   const handleMarkSolved = (id: string) => {
-    const question = questions.find((q) => q.id === id);
+    window.alert("marked solve id is " + id);
+
+    const question =
+      dueQuestions.find((q) => q.id === id) ||
+      notDueQuestions.find((q) => q.id === id);
+
     if (question) {
       setSelectedQuestionForRevision({
         id: question.id,
@@ -132,40 +137,45 @@ export default function LeetCodeTracker() {
   // Mark as solved with API call
   const markAsSolved = async (id: string, revisionWeeks: number) => {
     try {
-      const response = await fetch("/api/questions", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ id, revisionWeeks }),
-      });
+      window.alert(
+        "question marked as solved is " +
+          id +
+          " and revision weeks is " +
+          revisionWeeks
+      );
+      // const response = await fetch("/api/questions", {
+      //   method: "PATCH",
+      //   headers: {
+      //     "Content-Type": "application/json",
+      //   },
+      //   body: JSON.stringify({ id, revisionWeeks }),
+      // });
 
-      const data = await response.json();
+      // const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to update question");
-      }
+      // if (!response.ok) {
+      //   throw new Error(data.message || "Failed to update question");
+      // }
 
       // Update the local state
-      setQuestions((prev) =>
-        prev.map((q) => {
-          if (q.id === id) {
-            return {
-              ...q,
-              last_solved: new Date(data.question.last_solved),
-              reminder_date: new Date(data.question.reminder_date),
-            };
-          }
-          return q;
-        })
-      );
+      // setQuestions((prev) =>
+      //   prev.map((q) => {
+      //     if (q.id === id) {
+      //       return {
+      //         ...q,
+      //         last_solved: new Date(data.question.last_solved),
+      //         reminder_date: new Date(data.question.reminder_date),
+      //       };
+      //     }
+      //     return q;
+      //   })
+      // );
 
       // Close the revision modal
       setShowRevisionModal(false);
       setSelectedQuestionForRevision(null);
     } catch (error) {
       console.error("Error marking question as solved:", error);
-      // You might want to show an error message to the user here
     }
   };
 
@@ -194,7 +204,7 @@ export default function LeetCodeTracker() {
       }
 
       // Remove from local state
-      setQuestions((prev) => prev.filter((q) => q.id !== id));
+      // setQuestions((prev) => prev.filter((q) => q.id !== id));
     } catch (error) {
       console.error("Error deleting question:", error);
       // You might want to show an error message to the user here
@@ -262,7 +272,7 @@ export default function LeetCodeTracker() {
             LeetCode Tracker
           </h1>
           <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-            <span>Total: {questions.length}</span>
+            <span>Total: {dueCount + completedCount}</span>
             <span className="text-red-600 font-medium">Due: {dueCount}</span>
             <span className="text-green-600 font-medium">
               Completed: {completedCount}
@@ -323,7 +333,7 @@ export default function LeetCodeTracker() {
         />
 
         {/* Empty State */}
-        {questions.length === 0 && (
+        {dueCount + completedCount === 0 && (
           <div className="text-center py-12">
             <svg
               className="w-16 h-16 text-gray-400 mx-auto mb-4"

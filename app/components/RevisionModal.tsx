@@ -37,7 +37,7 @@ export const RevisionModal: React.FC<RevisionModalProps> = ({
   const getNextReviewDate = (weeks: number): string => {
     const date = new Date();
     date.setDate(date.getDate() + weeks * 7);
-    return date.toLocaleDateString("en-GB"); // DD/MM/YYYY format
+    return date.toLocaleDateString("en-GB");
   };
 
   return (
