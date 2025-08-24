@@ -10,6 +10,10 @@ import { RevisionModal } from "./components/RevisionModal";
 
 export default function LeetCodeTracker() {
   const [questions, setQuestions] = useState<LeetCodeQuestion[]>([]);
+  const [dueQuestions, setDueQuestions] = useState<LeetCodeQuestion[]>([]);
+  const [notDueQuestions, setNotDueQuestions] = useState<LeetCodeQuestion[]>(
+    []
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -20,7 +24,7 @@ export default function LeetCodeTracker() {
       name: string;
     } | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedTab, setSelectedTab] = useState<TabType>("all");
+  const [selectedTab, setSelectedTab] = useState<TabType>("due");
 
   // Fetch questions from database
   const fetchQuestions = async () => {
@@ -59,6 +63,20 @@ export default function LeetCodeTracker() {
   useEffect(() => {
     fetchQuestions();
   }, []);
+
+  useEffect(() => {
+    setDueQuestions(questions.filter((q) => isQuestionDue(q)));
+    setNotDueQuestions(questions.filter((q) => !isQuestionDue(q)));
+  }, [questions]);
+
+  // Filter by search term within the current tab
+  const getFilteredQuestions = () => {
+    const list = selectedTab === "due" ? dueQuestions : notDueQuestions;
+
+    return list.filter((q) =>
+      q.question.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  };
 
   // Add question via API
   const addQuestion = async (
@@ -183,26 +201,10 @@ export default function LeetCodeTracker() {
     }
   };
 
-  // Filter questions based on selected tab and search
-  const filteredQuestions = questions.filter((question) => {
-    const matchesSearch = question.question
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
+  const filteredQuestions = getFilteredQuestions();
 
-    if (!matchesSearch) return false;
-
-    switch (selectedTab) {
-      case "due":
-        return isQuestionDue(question);
-      case "completed":
-        return question.last_solved !== null;
-      default:
-        return true;
-    }
-  });
-
-  const dueCount = questions.filter(isQuestionDue).length;
-  const completedCount = questions.filter((q) => q.last_solved !== null).length;
+  const dueCount = dueQuestions.length;
+  const completedCount = notDueQuestions.length;
 
   if (isLoading) {
     return (
@@ -284,7 +286,7 @@ export default function LeetCodeTracker() {
 
           {/* Tab Buttons */}
           <div className="flex gap-2">
-            {(["all", "due", "completed"] as const).map((tab) => (
+            {(["due", "completed"] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setSelectedTab(tab)}

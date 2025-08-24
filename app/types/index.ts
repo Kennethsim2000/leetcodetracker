@@ -7,4 +7,4 @@ export interface LeetCodeQuestion {
   reminder_date: Date | null;
 }
 
-export type TabType = "all" | "due" | "completed";
+export type TabType = "due" | "completed";

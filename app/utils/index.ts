@@ -10,7 +10,7 @@ export const calculateNextReviewDate = (solveCount: number): Date => {
 };
 
 export const isQuestionDue = (question: LeetCodeQuestion): boolean => {
-  if (!question.reminder_date) return true; // New questions are always due
+  if (!question.reminder_date) return true; // question must have a reminder date
   return new Date() >= new Date(question.reminder_date);
 };
 
