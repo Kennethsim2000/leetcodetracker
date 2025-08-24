@@ -55,26 +55,14 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
     setErrors((prev) => ({ ...prev, api: "" }));
 
     try {
-      const response = await fetch("/api/questions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          question: formData.question.trim(),
-          url: formData.url.trim(),
-          difficulty: formData.difficulty,
-        }),
-      });
+      const data = {
+        question: formData.question.trim(),
+        url: formData.url.trim(),
+        difficulty: formData.difficulty,
+      };
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to add question");
-      }
-
-      // Call the parent's onAdd function with the created question
-      onAdd(data.question);
+      // Add the question to database
+      onAdd(data);
 
       // Reset form
       setFormData({
