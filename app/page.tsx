@@ -80,7 +80,10 @@ export default function LeetCodeTracker() {
 
   // Add question via API
   const addQuestion = async (
-    questionData: Omit<LeetCodeQuestion, "id" | "last_solved" | "reminder_date">
+    questionData: Omit<
+      LeetCodeQuestion,
+      "_id" | "last_solved" | "reminder_date"
+    >
   ) => {
     try {
       const response = await fetch("/api/questions", {
@@ -122,12 +125,12 @@ export default function LeetCodeTracker() {
     window.alert("marked solve id is " + id);
 
     const question =
-      dueQuestions.find((q) => q.id === id) ||
-      notDueQuestions.find((q) => q.id === id);
+      dueQuestions.find((q) => q._id === id) ||
+      notDueQuestions.find((q) => q._id === id);
 
     if (question) {
       setSelectedQuestionForRevision({
-        id: question.id,
+        id: question._id,
         name: question.question,
       });
       setShowRevisionModal(true);

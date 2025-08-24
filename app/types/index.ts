@@ -1,5 +1,5 @@
 export interface LeetCodeQuestion {
-  id: string;
+  _id: string;
   question: string;
   url: string;
   difficulty: "Easy" | "Medium" | "Hard";

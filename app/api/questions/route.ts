@@ -73,7 +73,7 @@ export async function POST(req: Request) {
     }
 
     // Construct the new question document
-    const newQuestion: Omit<LeetCodeQuestion, "id"> & {
+    const newQuestion: Omit<LeetCodeQuestion, "_id"> & {
       created_at: Date;
     } = {
       question: question.trim(),
@@ -88,7 +88,7 @@ export async function POST(req: Request) {
 
     // Match your LeetCodeQuestion type for the response
     const createdQuestion: LeetCodeQuestion = {
-      id: result.insertedId.toString(),
+      _id: result.insertedId.toString(),
       question: newQuestion.question,
       url: newQuestion.url,
       difficulty: newQuestion.difficulty,

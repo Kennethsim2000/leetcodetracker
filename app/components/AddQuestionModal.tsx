@@ -4,7 +4,7 @@ import { LeetCodeQuestion } from "../types";
 
 interface AddQuestionModalProps {
   onAdd: (
-    question: Omit<LeetCodeQuestion, "id" | "last_solved" | "reminder_date">
+    question: Omit<LeetCodeQuestion, "_id" | "last_solved" | "reminder_date">
   ) => void;
   onClose: () => void;
 }

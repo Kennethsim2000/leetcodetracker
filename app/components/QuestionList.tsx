@@ -107,13 +107,13 @@ export const QuestionsList: React.FC<QuestionsListProps> = ({
 
               <div className="flex gap-2 ml-4">
                 <button
-                  onClick={() => onMarkSolved(question.id)}
+                  onClick={() => onMarkSolved(question._id)}
                   className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors text-sm"
                 >
                   Mark Solved
                 </button>
                 <button
-                  onClick={() => onDelete(question.id)}
+                  onClick={() => onDelete(question._id)}
                   className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors text-sm"
                 >
                   Delete
