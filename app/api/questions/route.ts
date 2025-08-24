@@ -34,7 +34,7 @@ export async function POST(req: Request) {
     const collection = database.collection("LeetcodeQuestions");
 
     const body = await req.json();
-    const { question, url, difficulty, owner } = body;
+    const { question, url, difficulty } = body;
 
     // Validate required fields
     if (!question || !url || !difficulty) {
