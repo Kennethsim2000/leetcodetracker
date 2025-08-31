@@ -115,7 +115,6 @@ export default function LeetCodeTracker() {
       setShowAddForm(false);
     } catch (error) {
       console.error("Error adding question:", error);
-      // Error handling is done in the modal
       throw error;
     }
   };
@@ -206,11 +205,10 @@ export default function LeetCodeTracker() {
         throw new Error(data.message || "Failed to delete question");
       }
 
-      // Remove from local state
-      // setQuestions((prev) => prev.filter((q) => q.id !== id));
+      setDueQuestions((prev) => prev.filter((q) => q._id !== id));
     } catch (error) {
       console.error("Error deleting question:", error);
-      // You might want to show an error message to the user here
+      window.alert("Failed to delete question");
     }
   };
 
