@@ -148,3 +148,63 @@ export async function DELETE(req: Request) {
     );
   }
 }
+
+// PATCH update question (mark as solved)
+export async function PATCH(req: Request) {
+  try {
+    const body: { id: string; revisionWeeks: number } = await req.json();
+    const { id, revisionWeeks } = body;
+
+    if (!id || !revisionWeeks) {
+      return NextResponse.json(
+        { message: "Missing required fields: id and revisionWeeks" },
+        { status: 400 }
+      );
+    }
+
+    const client = await clientPromise;
+    const database = client.db(process.env.DATABASE);
+    const collection = database.collection("LeetcodeQuestions");
+
+    const now = new Date();
+    const reminderDate = new Date();
+    reminderDate.setDate(reminderDate.getDate() + revisionWeeks * 7);
+
+    const result = await collection.findOneAndUpdate(
+      { _id: new ObjectId(id) },
+      {
+        $set: {
+          last_solved: now,
+          reminder_date: reminderDate,
+        },
+      },
+      { returnDocument: "after" }
+    );
+    if (!result) {
+      console.log("Question not found");
+      return NextResponse.json(
+        { message: "Question not found" },
+        { status: 404 }
+      );
+    }
+
+    // Return updated question
+    return NextResponse.json({
+      message: "Question updated successfully",
+      question: {
+        _id: result._id.toString(),
+        question: result.question,
+        url: result.url,
+        difficulty: result.difficulty,
+        last_solved: result.last_solved,
+        reminder_date: result.reminder_date,
+      },
+    });
+  } catch (error) {
+    console.error("Error updating question:", error);
+    return NextResponse.json(
+      { message: "Failed to update question" },
+      { status: 500 }
+    );
+  }
+}

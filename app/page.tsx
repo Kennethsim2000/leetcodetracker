@@ -130,8 +130,6 @@ export default function LeetCodeTracker() {
 
   // Modified to show revision modal instead of immediately marking as solved
   const handleMarkSolved = (id: string) => {
-    window.alert("marked solve id is " + id);
-
     const question =
       dueQuestions.find((q) => q._id === id) ||
       notDueQuestions.find((q) => q._id === id);
@@ -148,41 +146,30 @@ export default function LeetCodeTracker() {
   // Mark as solved with API call
   const markAsSolved = async (id: string, revisionWeeks: number) => {
     try {
-      window.alert(
-        "question marked as solved is " +
-          id +
-          " and revision weeks is " +
-          revisionWeeks
-      );
-      // const response = await fetch("/api/questions", {
-      //   method: "PATCH",
-      //   headers: {
-      //     "Content-Type": "application/json",
-      //   },
-      //   body: JSON.stringify({ id, revisionWeeks }),
-      // });
+      const response = await fetch("/api/questions", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id, revisionWeeks }),
+      });
 
-      // const data = await response.json();
+      const data = await response.json();
+      const { last_solved, reminder_date, ...rest } = data.question;
 
-      // if (!response.ok) {
-      //   throw new Error(data.message || "Failed to update question");
-      // }
+      const updatedQuestion = {
+        ...rest,
+        last_solved: last_solved ? new Date(last_solved) : null,
+        reminder_date: reminder_date ? new Date(reminder_date) : null,
+      };
 
-      // Update the local state
-      // setQuestions((prev) =>
-      //   prev.map((q) => {
-      //     if (q.id === id) {
-      //       return {
-      //         ...q,
-      //         last_solved: new Date(data.question.last_solved),
-      //         reminder_date: new Date(data.question.reminder_date),
-      //       };
-      //     }
-      //     return q;
-      //   })
-      // );
+      setDueQuestions((prev) => prev.filter((q) => q._id !== id));
 
-      // Close the revision modal
+      setNotDueQuestions((prev) => [
+        ...prev.filter((q) => q._id !== id),
+        updatedQuestion,
+      ]);
+
       setShowRevisionModal(false);
       setSelectedQuestionForRevision(null);
     } catch (error) {
