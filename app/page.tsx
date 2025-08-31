@@ -7,6 +7,8 @@ import { isQuestionDue } from "./utils";
 import { QuestionsList } from "./components/QuestionList";
 import { AddQuestionModal } from "./components/AddQuestionModal";
 import { RevisionModal } from "./components/RevisionModal";
+import { DeleteModal } from "./components/DeleteModal";
+import { SuccessToast } from "./components/SuccessToast";
 
 export default function LeetCodeTracker() {
   const [dueQuestions, setDueQuestions] = useState<LeetCodeQuestion[]>([]);
@@ -24,6 +26,13 @@ export default function LeetCodeTracker() {
     } | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTab, setSelectedTab] = useState<TabType>("due");
+  const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
+
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedQuestionForDelete, setSelectedQuestionForDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   // Fetch questions from database
   const fetchQuestions = async () => {
@@ -192,7 +201,22 @@ export default function LeetCodeTracker() {
     setSelectedQuestionForRevision(null);
   };
 
-  // Delete question via API
+  // shows modal instead of deleting immediately
+  const handleDeleteClick = (id: string) => {
+    const question =
+      dueQuestions.find((q) => q._id === id) ||
+      notDueQuestions.find((q) => q._id === id);
+
+    if (question) {
+      setSelectedQuestionForDelete({
+        id: question._id,
+        name: question.question,
+      });
+      setShowDeleteModal(true);
+    }
+  };
+
+  // Delete question
   const deleteQuestion = async (id: string) => {
     try {
       const response = await fetch(`/api/questions?id=${id}`, {
@@ -205,11 +229,36 @@ export default function LeetCodeTracker() {
         throw new Error(data.message || "Failed to delete question");
       }
 
+      // Update both arrays since we don't know which one contains the question
       setDueQuestions((prev) => prev.filter((q) => q._id !== id));
+      setNotDueQuestions((prev) => prev.filter((q) => q._id !== id));
+
+      // Close modal and show success
+      setShowDeleteModal(false);
+      setSelectedQuestionForDelete(null);
+      setDeleteSuccess("Question deleted successfully!");
+
+      setTimeout(() => setDeleteSuccess(null), 3000);
     } catch (error) {
       console.error("Error deleting question:", error);
-      window.alert("Failed to delete question");
+      setShowDeleteModal(false);
+      setSelectedQuestionForDelete(null);
+      setDeleteSuccess("Failed to delete question");
+      setTimeout(() => setDeleteSuccess(null), 3000);
     }
+  };
+
+  // Handle delete confirmation from modal
+  const handleDeleteConfirm = () => {
+    if (selectedQuestionForDelete) {
+      deleteQuestion(selectedQuestionForDelete.id);
+    }
+  };
+
+  // Handle delete modal close
+  const handleDeleteClose = () => {
+    setShowDeleteModal(false);
+    setSelectedQuestionForDelete(null);
   };
 
   const filteredQuestions = getFilteredQuestions();
@@ -330,7 +379,7 @@ export default function LeetCodeTracker() {
         <QuestionsList
           questions={filteredQuestions}
           onMarkSolved={handleMarkSolved}
-          onDelete={deleteQuestion}
+          onDelete={handleDeleteClick}
         />
 
         {/* Empty State */}
@@ -386,6 +435,25 @@ export default function LeetCodeTracker() {
             onClose={handleRevisionClose}
           />
         </div>
+      )}
+
+      {/* DELETE MODAL */}
+      {showDeleteModal && selectedQuestionForDelete && (
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-300">
+          <DeleteModal
+            questionName={selectedQuestionForDelete.name}
+            onConfirm={handleDeleteConfirm}
+            onClose={handleDeleteClose}
+          />
+        </div>
+      )}
+
+      {/* SUCCESS TOAST */}
+      {deleteSuccess && (
+        <SuccessToast
+          message={deleteSuccess}
+          onClose={() => setDeleteSuccess(null)}
+        />
       )}
     </div>
   );
