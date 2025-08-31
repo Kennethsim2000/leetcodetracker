@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import clientPromise from "../../lib/mongodb";
 import { LeetCodeQuestion } from "@/app/types";
+import { ObjectId } from "mongodb";
 
 export const dynamic = "force-dynamic";
 
@@ -107,6 +108,42 @@ export async function POST(req: Request) {
     console.error("Error adding question:", error);
     return NextResponse.json(
       { message: "Failed to add question" },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE question
+export async function DELETE(req: Request) {
+  try {
+    const url = new URL(req.url);
+    const id = url.searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json(
+        { message: "Missing id parameter" },
+        { status: 400 }
+      );
+    }
+
+    const client = await clientPromise;
+    const database = client.db(process.env.DATABASE);
+    const collection = database.collection("LeetcodeQuestions");
+
+    const result = await collection.deleteOne({ _id: new ObjectId(id) });
+
+    if (result.deletedCount === 0) {
+      return NextResponse.json(
+        { message: "Question not found" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ message: "Question deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting question:", error);
+    return NextResponse.json(
+      { message: "Failed to delete question" },
       { status: 500 }
     );
   }
