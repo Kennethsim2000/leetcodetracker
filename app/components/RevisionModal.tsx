@@ -19,6 +19,7 @@ export const RevisionModal: React.FC<RevisionModalProps> = ({
     { weeks: 4, label: "1 month", description: "Standard interval" },
     { weeks: 8, label: "2 months", description: "Extended review" },
     { weeks: 12, label: "3 months", description: "Long-term retention" },
+    { weeks: 24, label: "6 months", description: "Maximum interval" },
   ];
 
   const handleConfirm = () => {
@@ -89,7 +90,7 @@ export const RevisionModal: React.FC<RevisionModalProps> = ({
         <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
           When would you like to revise this question again?
         </label>
-        <div className="space-y-3">
+        <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
           {revisionOptions.map(({ weeks, label, description }) => (
             <button
               key={weeks}
