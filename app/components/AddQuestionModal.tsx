@@ -4,14 +4,16 @@ import { LeetCodeQuestion } from "../types";
 
 interface AddQuestionModalProps {
   onAdd: (
-    question: Omit<LeetCodeQuestion, "_id" | "last_solved" | "reminder_date">
+    question: Omit<LeetCodeQuestion, "_id" | "last_solved" | "reminder_date">,
   ) => void;
   onClose: () => void;
+  existingQuestions: LeetCodeQuestion[];
 }
 
 export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
   onAdd,
   onClose,
+  existingQuestions,
 }) => {
   const [formData, setFormData] = useState({
     question: "",
@@ -26,6 +28,23 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showDuplicateToast, setShowDuplicateToast] = useState(false);
+  const [duplicateQuestionName, setDuplicateQuestionName] = useState("");
+
+  const checkDuplicateURL = (url: string): boolean => {
+    const normalizedUrl = url.trim().toLowerCase();
+    const duplicate = existingQuestions.find(
+      (q) => q.url.toLowerCase() === normalizedUrl,
+    );
+
+    if (duplicate) {
+      setDuplicateQuestionName(duplicate.question);
+      setShowDuplicateToast(true);
+      setTimeout(() => setShowDuplicateToast(false), 5000);
+      return true;
+    }
+    return false;
+  };
 
   const validateForm = (): boolean => {
     const newErrors = { question: "", url: "", api: "" };
@@ -41,6 +60,9 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
       isValid = false;
     } else if (!formData.url.includes("leetcode.com")) {
       newErrors.url = "Please enter a valid LeetCode URL";
+      isValid = false;
+    } else if (checkDuplicateURL(formData.url)) {
+      newErrors.url = "This question URL already exists";
       isValid = false;
     }
 
@@ -104,186 +126,46 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 w-[480px] shadow-2xl border border-gray-200 dark:border-gray-700 backdrop-blur-sm">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Add New Question
-          </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            Track your LeetCode progress
-          </p>
-        </div>
-        <button
-          onClick={onClose}
-          disabled={isSubmitting}
-          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
-        >
-          <svg
-            className="w-5 h-5 text-gray-500"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
-        </button>
-      </div>
-
-      <div className="space-y-6">
-        {/* API Error Display */}
-        {errors.api && (
-          <div className="p-3 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-xl">
-            <p className="text-red-600 dark:text-red-400 text-sm flex items-center gap-2">
-              <svg
-                className="w-4 h-4 flex-shrink-0"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              {errors.api}
+    <>
+      <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 w-[480px] shadow-2xl border border-gray-200 dark:border-gray-700 backdrop-blur-sm">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Add New Question
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              Track your LeetCode progress
             </p>
           </div>
-        )}
-
-        {/* Question Name */}
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-            Question Name
-          </label>
-          <input
-            type="text"
-            value={formData.question}
-            onChange={(e) => {
-              setFormData((prev) => ({ ...prev, question: e.target.value }));
-              if (errors.question)
-                setErrors((prev) => ({ ...prev, question: "" }));
-            }}
-            onKeyPress={handleKeyPress}
-            placeholder="e.g., Two Sum, Reverse Linked List"
-            disabled={isSubmitting}
-            className={`w-full p-4 border-2 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
-              errors.question
-                ? "border-red-300 bg-red-50 dark:bg-red-900/10"
-                : "border-gray-200 dark:border-gray-600"
-            }`}
-          />
-          {errors.question && (
-            <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              {errors.question}
-            </p>
-          )}
-        </div>
-
-        {/* LeetCode URL */}
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-            LeetCode URL
-          </label>
-          <input
-            type="url"
-            value={formData.url}
-            onChange={(e) => {
-              setFormData((prev) => ({ ...prev, url: e.target.value }));
-              if (errors.url) setErrors((prev) => ({ ...prev, url: "" }));
-            }}
-            onKeyPress={handleKeyPress}
-            placeholder="https://leetcode.com/problems/two-sum/"
-            disabled={isSubmitting}
-            className={`w-full p-4 border-2 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
-              errors.url
-                ? "border-red-300 bg-red-50 dark:bg-red-900/10"
-                : "border-gray-200 dark:border-gray-600"
-            }`}
-          />
-          {errors.url && (
-            <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              {errors.url}
-            </p>
-          )}
-        </div>
-
-        {/* Difficulty */}
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-            Difficulty Level
-          </label>
-          <div className="grid grid-cols-3 gap-3">
-            {["Easy", "Medium", "Hard"].map((difficulty) => (
-              <button
-                key={difficulty}
-                type="button"
-                onClick={() =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    difficulty: difficulty as "Easy" | "Medium" | "Hard",
-                  }))
-                }
-                disabled={isSubmitting}
-                className={`p-3 rounded-xl border-2 transition-all font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed ${
-                  formData.difficulty === difficulty
-                    ? `${getDifficultyColor(
-                        difficulty
-                      )} border-current shadow-md`
-                    : "bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600"
-                }`}
-              >
-                {difficulty}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex gap-3 pt-4">
           <button
-            onClick={handleSubmit}
+            onClick={onClose}
             disabled={isSubmitting}
-            className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white py-4 rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
           >
-            {isSubmitting ? (
-              <>
+            <svg
+              className="w-5 h-5 text-gray-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+
+        <div className="space-y-6">
+          {/* API Error Display */}
+          {errors.api && (
+            <div className="p-3 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-xl">
+              <p className="text-red-600 dark:text-red-400 text-sm flex items-center gap-2">
                 <svg
-                  className="animate-spin w-5 h-5"
+                  className="w-4 h-4 flex-shrink-0"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -292,42 +174,239 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
-                Adding...
-              </>
-            ) : (
-              <>
-                <Plus className="w-5 h-5" />
-                Add Question
-              </>
+                {errors.api}
+              </p>
+            </div>
+          )}
+
+          {/* Question Name */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              Question Name
+            </label>
+            <input
+              type="text"
+              value={formData.question}
+              onChange={(e) => {
+                setFormData((prev) => ({ ...prev, question: e.target.value }));
+                if (errors.question)
+                  setErrors((prev) => ({ ...prev, question: "" }));
+              }}
+              onKeyPress={handleKeyPress}
+              placeholder="e.g., Two Sum, Reverse Linked List"
+              disabled={isSubmitting}
+              className={`w-full p-4 border-2 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                errors.question
+                  ? "border-red-300 bg-red-50 dark:bg-red-900/10"
+                  : "border-gray-200 dark:border-gray-600"
+              }`}
+            />
+            {errors.question && (
+              <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                {errors.question}
+              </p>
             )}
-          </button>
-          <button
-            onClick={onClose}
-            disabled={isSubmitting}
-            className="px-6 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-4 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Cancel
-          </button>
+          </div>
+
+          {/* LeetCode URL */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              LeetCode URL
+            </label>
+            <input
+              type="url"
+              value={formData.url}
+              onChange={(e) => {
+                setFormData((prev) => ({ ...prev, url: e.target.value }));
+                if (errors.url) setErrors((prev) => ({ ...prev, url: "" }));
+                setShowDuplicateToast(false);
+              }}
+              onKeyPress={handleKeyPress}
+              placeholder="https://leetcode.com/problems/two-sum/"
+              disabled={isSubmitting}
+              className={`w-full p-4 border-2 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                errors.url
+                  ? "border-red-300 bg-red-50 dark:bg-red-900/10"
+                  : "border-gray-200 dark:border-gray-600"
+              }`}
+            />
+            {errors.url && (
+              <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                {errors.url}
+              </p>
+            )}
+          </div>
+
+          {/* Difficulty */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+              Difficulty Level
+            </label>
+            <div className="grid grid-cols-3 gap-3">
+              {["Easy", "Medium", "Hard"].map((difficulty) => (
+                <button
+                  key={difficulty}
+                  type="button"
+                  onClick={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      difficulty: difficulty as "Easy" | "Medium" | "Hard",
+                    }))
+                  }
+                  disabled={isSubmitting}
+                  className={`p-3 rounded-xl border-2 transition-all font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed ${
+                    formData.difficulty === difficulty
+                      ? `${getDifficultyColor(
+                          difficulty,
+                        )} border-current shadow-md`
+                      : "bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600"
+                  }`}
+                >
+                  {difficulty}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 pt-4">
+            <button
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white py-4 rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            >
+              {isSubmitting ? (
+                <>
+                  <svg
+                    className="animate-spin w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                    />
+                  </svg>
+                  Adding...
+                </>
+              ) : (
+                <>
+                  <Plus className="w-5 h-5" />
+                  Add Question
+                </>
+              )}
+            </button>
+            <button
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="px-6 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-4 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+
+        {/* Keyboard shortcut hint */}
+        <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+          <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+            Press{" "}
+            <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono">
+              Enter
+            </kbd>{" "}
+            to submit or{" "}
+            <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono">
+              Esc
+            </kbd>{" "}
+            to cancel
+          </p>
         </div>
       </div>
 
-      {/* Keyboard shortcut hint */}
-      <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-        <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-          Press{" "}
-          <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono">
-            Enter
-          </kbd>{" "}
-          to submit or{" "}
-          <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono">
-            Esc
-          </kbd>{" "}
-          to cancel
-        </p>
-      </div>
-    </div>
+      {/* Duplicate URL Toast */}
+      {showDuplicateToast && (
+        <div className="fixed top-4 right-4 z-[60] animate-in slide-in-from-top-2 duration-300">
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-400 dark:border-yellow-600 rounded-xl p-4 shadow-xl max-w-md">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 mt-0.5">
+                <svg
+                  className="w-5 h-5 text-yellow-600 dark:text-yellow-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-1">
+                  Duplicate Question Found
+                </h3>
+                <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                  This URL already exists for:{" "}
+                  <span className="font-medium">
+                    &quot;{duplicateQuestionName}&quot;
+                  </span>
+                </p>
+              </div>
+              <button
+                onClick={() => setShowDuplicateToast(false)}
+                className="flex-shrink-0 text-yellow-600 dark:text-yellow-400 hover:text-yellow-800 dark:hover:text-yellow-200 transition-colors"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };

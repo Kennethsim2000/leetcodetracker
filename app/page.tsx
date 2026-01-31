@@ -13,7 +13,7 @@ import { SuccessToast } from "./components/SuccessToast";
 export default function LeetCodeTracker() {
   const [dueQuestions, setDueQuestions] = useState<LeetCodeQuestion[]>([]);
   const [notDueQuestions, setNotDueQuestions] = useState<LeetCodeQuestion[]>(
-    []
+    [],
   );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,19 +53,19 @@ export default function LeetCodeTracker() {
           ...q,
           last_solved: q.last_solved ? new Date(q.last_solved) : null,
           reminder_date: q.reminder_date ? new Date(q.reminder_date) : null,
-        })
+        }),
       );
 
       setDueQuestions(
-        transformedQuestions.filter((q: LeetCodeQuestion) => isQuestionDue(q))
+        transformedQuestions.filter((q: LeetCodeQuestion) => isQuestionDue(q)),
       );
       setNotDueQuestions(
-        transformedQuestions.filter((q: LeetCodeQuestion) => !isQuestionDue(q))
+        transformedQuestions.filter((q: LeetCodeQuestion) => !isQuestionDue(q)),
       );
     } catch (error) {
       console.error("Error fetching questions:", error);
       setError(
-        error instanceof Error ? error.message : "Failed to load questions"
+        error instanceof Error ? error.message : "Failed to load questions",
       );
     } finally {
       setIsLoading(false);
@@ -82,7 +82,7 @@ export default function LeetCodeTracker() {
     const list = selectedTab === "due" ? dueQuestions : notDueQuestions;
 
     const questions = list.filter((q) =>
-      q.question.toLowerCase().includes(searchTerm.toLowerCase())
+      q.question.toLowerCase().includes(searchTerm.toLowerCase()),
     );
     return questions;
   };
@@ -92,7 +92,7 @@ export default function LeetCodeTracker() {
     questionData: Omit<
       LeetCodeQuestion,
       "_id" | "last_solved" | "reminder_date"
-    >
+    >,
   ) => {
     try {
       const response = await fetch("/api/questions", {
@@ -253,6 +253,8 @@ export default function LeetCodeTracker() {
   const dueCount = dueQuestions.length;
   const completedCount = notDueQuestions.length;
 
+  const allQuestions = [...dueQuestions, ...notDueQuestions];
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -409,6 +411,7 @@ export default function LeetCodeTracker() {
           <AddQuestionModal
             onAdd={addQuestion}
             onClose={() => setShowAddForm(false)}
+            existingQuestions={allQuestions}
           />
         </div>
       )}
