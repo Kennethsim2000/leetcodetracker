@@ -155,6 +155,12 @@ export default function LeetCodeTracker() {
       });
 
       const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to mark question as solved");
+      }
+
+      // Update local state
       const { last_solved, reminder_date, ...rest } = data.question;
 
       const updatedQuestion = {
@@ -170,8 +176,18 @@ export default function LeetCodeTracker() {
         updatedQuestion,
       ]);
 
+      // Close modal
       setShowRevisionModal(false);
       setSelectedQuestionForRevision(null);
+
+      // Create GitHub commit
+      const gitResponse = await fetch("/api/github", {
+        method: "POST",
+      });
+
+      if (!gitResponse.ok) {
+        console.error("Failed to create GitHub commit");
+      }
     } catch (error) {
       console.error("Error marking question as solved:", error);
     }
