@@ -26,6 +26,9 @@ export default function LeetCodeTracker() {
     } | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTab, setSelectedTab] = useState<TabType>("due");
+  const [dueSortOrder, setDueSortOrder] = useState<"earliest" | "latest">(
+    "earliest",
+  );
   const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -77,14 +80,25 @@ export default function LeetCodeTracker() {
     fetchQuestions();
   }, []);
 
-  // Filter by search term within the current tab
+  // Filter by search term and sort due questions by their next review date
   const getFilteredQuestions = () => {
     const list = selectedTab === "due" ? dueQuestions : notDueQuestions;
 
     const questions = list.filter((q) =>
       q.question.toLowerCase().includes(searchTerm.toLowerCase()),
     );
-    return questions;
+
+    if (selectedTab !== "due") {
+      return questions;
+    }
+
+    return [...questions].sort((a, b) => {
+      // A missing reminder date means the question is immediately due.
+      const aDate = a.reminder_date?.getTime() ?? Number.NEGATIVE_INFINITY;
+      const bDate = b.reminder_date?.getTime() ?? Number.NEGATIVE_INFINITY;
+
+      return dueSortOrder === "earliest" ? aDate - bDate : bDate - aDate;
+    });
   };
 
   // Add question via API
@@ -370,6 +384,23 @@ export default function LeetCodeTracker() {
             ))}
           </div>
 
+          {selectedTab === "due" && (
+            <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+              <span className="whitespace-nowrap">Sort by due date</span>
+              <select
+                value={dueSortOrder}
+                onChange={(e) =>
+                  setDueSortOrder(e.target.value as "earliest" | "latest")
+                }
+                aria-label="Sort due questions by due date"
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="earliest">Earliest first</option>
+                <option value="latest">Latest first</option>
+              </select>
+            </label>
+          )}
+
           {/* Add Button */}
           <button
             onClick={() => setShowAddForm(true)}
@@ -400,7 +431,7 @@ export default function LeetCodeTracker() {
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={1}
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a2 2 0 01.707.293l5.414 5.414a2 2 0 01.293.707V19a2 2 0 01-2 2z"
               />
             </svg>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
